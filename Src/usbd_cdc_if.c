@@ -254,6 +254,9 @@ uint8_t writing_len;
 uint8_t buf[256] =  {0};
 uint16_t bufptr;
 
+uint8_t okmsg[] = "ok\r\n";
+uint8_t nokmsg[] = "nok\r\n";
+
 /**
   * @brief  Data received over USB OUT endpoint are sent over CDC interface
   *         through this function.
@@ -280,14 +283,14 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 		{
 			if(Buf[idx] == 's')
 			{
-				if(bootloader_start() != 0)
-				{
-					CDC_Transmit_FS("nok\r\n", 5);
-				}
-				else
-				{
-					CDC_Transmit_FS("ok\r\n", 4);
-				}
+				cmd_item start_item;
+				start_item.command = 's';
+				start_item.mem_addr = 0;
+				start_item.params = 0;
+				start_item.pLength = 0;
+
+				push_cmd(start_item);
+				CDC_Transmit_FS(okmsg, 4);
 			}
 			else if(Buf[idx] == 'e')
 			{
@@ -298,7 +301,14 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 			}
 			else if(Buf[idx] == 'f')
 			{
-                bootloader_stop();
+                cmd_item finish_item;
+				finish_item.command = 'f';
+				finish_item.mem_addr = 0;
+				finish_item.params = 0;
+				finish_item.pLength = 0;
+
+				push_cmd(finish_item);
+				CDC_Transmit_FS(okmsg, 4);
 			}
 		}
 		else if(state == 1)
@@ -334,13 +344,21 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 					strlen = sprintf(cs_string, "W Ok\t%s\r\n", buf);
 					CDC_Transmit_FS(cs_string, strlen);*/
 
-					char cs_string[256];
+					/*char cs_string[256];
 					uint16_t strlen;
 					strlen = sprintf(cs_string, "WOk %d\t%d\t%d\t%d\r\n", mem_addr, recv_chks, bufptr, writing_len);
-					CDC_Transmit_FS(cs_string, strlen);
+					CDC_Transmit_FS(cs_string, strlen);*/
 
-					if(bootloader_write(mem_addr, buf, writing_len) == 0) 0;//CDC_Transmit_FS("ok\r\n", 4);
-					else CDC_Transmit_FS("nok\r\n", 5);
+					cmd_item write_item;
+					write_item.command = 'e';
+					write_item.mem_addr = mem_addr;
+					write_item.pLength = writing_len;
+
+					write_item.params = (uint8_t*) malloc(writing_len);
+                    for(unsigned int i = 0; i < writing_len; ++writing_len) write_item.params[i] = buf[i];
+                    push_cmd(write_item);
+
+					CDC_Transmit_FS(okmsg, 4);
 
 				}
 				else
@@ -349,7 +367,7 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 					uint16_t strlen;
 					strlen = sprintf(cs_string, "WNOk %d\t%d\t%d\t%d\r\n", checksum, recv_chks, bufptr, writing_len);
 					CDC_Transmit_FS(cs_string, strlen);*/
-					CDC_Transmit_FS("nok\r\n", 5);
+					CDC_Transmit_FS(nokmsg, 5);
 				}
                 state = 0;
 			}

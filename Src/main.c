@@ -116,6 +116,7 @@ int main(void)
 	if(correct) HAL_GPIO_WritePin(GPIOE, LD10_Pin, GPIO_PIN_SET);
 	else HAL_GPIO_WritePin(GPIOE, LD9_Pin, GPIO_PIN_SET);*/
 
+	uint32_t last_toogle = HAL_GetTick();
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
@@ -123,10 +124,30 @@ int main(void)
 	while (1)
 	{
 		/* USER CODE END WHILE */
-		HAL_GPIO_WritePin(GPIOE, LD3_Pin, GPIO_PIN_SET);
-		HAL_Delay(1000);
-		HAL_GPIO_WritePin(GPIOE, LD3_Pin, GPIO_PIN_RESET);
-		HAL_Delay(1000);
+		if(HAL_GetTick()-last_toogle > 1000)
+		{
+			HAL_GPIO_TogglePin(GPIOE, LD3_Pin);
+			last_toogle = HAL_GetTick();
+		}
+
+		cmd_item now_item = pop_cmd();
+		switch(now_item.command)
+		{
+		case 's':
+			bootloader_start();
+			break;
+
+		case 'f':
+			bootloader_stop();
+			break;
+
+		case 'e':
+			bootloader_write(now_item.mem_addr, now_item.params, now_item.pLength);
+			free(now_item.params);
+            break;
+		}
+
+		HAL_Delay(1);
 		/* USER CODE BEGIN 3 */
 	}
 	/* USER CODE END 3 */

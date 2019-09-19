@@ -1,5 +1,47 @@
 #include "bootloader.h"
 
+volatile cmd_item cmd_storage[32];
+volatile uint8_t cmd_head;
+volatile uint8_t cmd_tail;
+
+void init_cmd_storage()
+{
+	cmd_head = 0;
+	cmd_tail = 0;
+}
+
+uint8_t push_cmd(cmd_item item)
+{
+	uint8_t next_head = (cmd_head+1)%CMDSTO_SIZE;
+	if(next_head == cmd_tail) return 1;
+
+	cmd_head = next_head;
+	cmd_storage[cmd_head].command = item.command;
+	cmd_storage[cmd_head].pLength = item.pLength;
+	cmd_storage[cmd_head].params = item.params;
+	cmd_storage[cmd_head].mem_addr = item.mem_addr;
+	return 0;
+}
+
+cmd_item pop_cmd()
+{
+	if(cmd_head == cmd_tail)
+	{
+		cmd_item retval;
+		retval.command = 0;
+		retval.pLength = 0;
+		retval.params = 0;
+		retval.mem_addr = 0;
+		return retval;
+	}
+	else
+	{
+		uint8_t old_tail = cmd_tail;
+		cmd_tail = (cmd_tail+1)%CMDSTO_SIZE;
+		return cmd_storage[old_tail];
+	}
+}
+
 uint8_t chksum_calc(uint8_t* pData, int len)
 {
 	uint8_t chksum = pData[0];
@@ -11,8 +53,8 @@ uint8_t bootloader_start()
 {
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
 
-	char send[] = {0x5A, 0x00};
-	char recv;
+	uint8_t send[] = {0x5A, 0x00};
+	uint8_t recv;
 	uint8_t trials = 3;
 	HAL_SPI_Transmit(&hspi1, send, 2, 1000);
 	HAL_SPI_Receive(&hspi1, &recv, 1, 1000);
@@ -26,7 +68,7 @@ uint8_t bootloader_start()
 
 uint8_t bootloader_get_ack()
 {
-	char trx=0;
+	uint8_t trx=0;
 	HAL_SPI_Transmit(&hspi1, &trx, 1, 1000);
 	HAL_SPI_Receive(&hspi1, &trx, 1, 1000);
 	if(trx == 0x79)
@@ -39,8 +81,8 @@ uint8_t bootloader_get_ack()
 
 uint8_t bootloader_get_command()
 {
-	char to_send[128] = {0};
-	char to_recv[128] = {0};
+	uint8_t to_send[128] = {0};
+	uint8_t to_recv[128] = {0};
 
 	to_send[0] = 0x5A;
 	to_send[1] = 0x00;
@@ -55,9 +97,9 @@ uint8_t bootloader_get_command()
 	return 1;
 }
 
-void bootloader_read(uint32_t addr, char* recvDataPtr, uint8_t len)
+void bootloader_read(uint32_t addr, uint8_t* recvDataPtr, uint8_t len)
 {
-	char to_send[5];
+	uint8_t to_send[5];
 
 	to_send[0] = 0x5A;
 	to_send[1] = 0x11;
