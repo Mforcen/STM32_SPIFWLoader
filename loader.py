@@ -5,6 +5,7 @@ import argparse
 from tqdm import trange
 import sys
 import glob
+from time import sleep
 
 def serial_ports():
     """ Lists serial port names
@@ -78,16 +79,18 @@ bar_params = dict(desc="Progress",
                   ncols=70,
                   unit_scale=True)
 
-# to_send = bytearray()
-# to_send += b's\r\n'
-# port.write(to_send)
-# response = port.readline()
-# if response != respuesta ingeniosa:
-#   print('no se puede sincronizar con el bootloader')
-#   exit()
+responses = []
 
 try:
-    for i in trange(chunks, **bar_params):
+    to_send = bytearray()
+    to_send += b's\r\n'
+    port.write(to_send)
+    response = port.readline()
+    print(response)
+    responses += [response]
+    sleep(0.05)
+    # for i in trange(chunks, **bar_params):
+    for i in range(chunks):
         chunk = file_content[file_written:file_written+128]
         file_written += 128
         checksum = chunk[0]
@@ -108,7 +111,8 @@ try:
         port.write(to_send)
 
         response = port.readline()
-        #print(response)
+        print(response)
+        responses += [response]
 
     if file_written < 0x0fffffff:
         chunk = file_content[file_written:]
@@ -128,13 +132,14 @@ try:
         port.write(to_send)
 
         response = port.readline()
-        print(response)
+        responses += [response]
 
-        # to_send = bytearray()
-        # to_send += b'f\r\n'
-        # port.write(to_send)
-        # response = port.readline()
-        # print(response)
+        to_send = bytearray()
+        to_send += b'f\r\n'
+        port.write(to_send)
+        response = port.readline()
+        print(responses)
+        print('f: ' + response)
 except serial.serialutil.SerialException as serialError:
     print(f"[Serial Error] {serialError}")
     exit()

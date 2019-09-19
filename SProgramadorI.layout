@@ -2,19 +2,19 @@
 <CodeBlocks_layout_file>
 	<FileVersion major="1" minor="0" />
 	<ActiveTarget name="Debug" />
-	<File name="Src/stm32f3xx_it.c" open="0" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="5572" topLine="149" />
-		</Cursor>
-	</File>
 	<File name="Makefile" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="1160" topLine="42" />
 		</Cursor>
 	</File>
-	<File name="Inc/main.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="Src/usb_device.c" open="0" top="0" tabpos="7" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="0" topLine="16" />
+			<Cursor1 position="956" topLine="10" />
+		</Cursor>
+	</File>
+	<File name="Src/main.c" open="1" top="1" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="2691" topLine="30" />
 		</Cursor>
 	</File>
 	<File name="Src/usbd_desc.c" open="0" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
@@ -22,24 +22,44 @@
 			<Cursor1 position="829" topLine="0" />
 		</Cursor>
 	</File>
+	<File name="Src/bootloader.c" open="1" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="2704" topLine="69" />
+		</Cursor>
+	</File>
+	<File name="Inc/bootloader.h" open="1" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="210" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="Src/usbd_cdc_if.c" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="8943" topLine="311" />
+		</Cursor>
+	</File>
 	<File name="Src/usbd_conf.c" open="0" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="0" topLine="117" />
 		</Cursor>
 	</File>
-	<File name="Src/usbd_cdc_if.c" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="Inc/main.h" open="1" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="8592" topLine="300" />
+			<Cursor1 position="0" topLine="67" />
 		</Cursor>
 	</File>
-	<File name="Src/main.c" open="1" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="Inc/stm32f3xx_hal_conf.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="1591" topLine="30" />
+			<Cursor1 position="7399" topLine="139" />
 		</Cursor>
 	</File>
-	<File name="Src/usb_device.c" open="0" top="0" tabpos="7" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="Src/stm32f3xx_it.c" open="0" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="956" topLine="10" />
+			<Cursor1 position="5572" topLine="149" />
+		</Cursor>
+	</File>
+	<File name="Src/stm32f3xx_hal_msp.c" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="5641" topLine="92" />
 		</Cursor>
 	</File>
 </CodeBlocks_layout_file>

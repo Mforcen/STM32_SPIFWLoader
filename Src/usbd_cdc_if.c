@@ -282,11 +282,11 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 			{
 				if(bootloader_start() != 0)
 				{
-					CDC_Transmit_FS("NotOk\r\n", 7);
+					CDC_Transmit_FS("nok\r\n", 5);
 				}
 				else
 				{
-					CDC_Transmit_FS("Ok\r\n", 4);
+					CDC_Transmit_FS("ok\r\n", 4);
 				}
 			}
 			else if(Buf[idx] == 'e')
@@ -295,6 +295,10 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 				writing_state = 0;
 				writing_len = 0;
 				mem_addr = 0;
+			}
+			else if(Buf[idx] == 'f')
+			{
+                bootloader_stop();
 			}
 		}
 		else if(state == 1)
@@ -325,21 +329,29 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 				uint8_t recv_chks = chksum_calc(buf, writing_len);
 				if(checksum == recv_chks)
 				{
-					char cs_string[256];
+					/*char cs_string[256];
 					uint16_t strlen;
 					strlen = sprintf(cs_string, "W Ok\t%s\r\n", buf);
+					CDC_Transmit_FS(cs_string, strlen);*/
+
+					char cs_string[256];
+					uint16_t strlen;
+					strlen = sprintf(cs_string, "WOk %d\t%d\t%d\t%d\r\n", mem_addr, recv_chks, bufptr, writing_len);
 					CDC_Transmit_FS(cs_string, strlen);
-					//CDC_Transmit_FS("W Ok\r\n", 6);
-					state = 0;
+
+					if(bootloader_write(mem_addr, buf, writing_len) == 0) 0;//CDC_Transmit_FS("ok\r\n", 4);
+					else CDC_Transmit_FS("nok\r\n", 5);
+
 				}
 				else
 				{
-					char cs_string[256];
+					/*char cs_string[256];
 					uint16_t strlen;
 					strlen = sprintf(cs_string, "WNOk %d\t%d\t%d\t%d\r\n", checksum, recv_chks, bufptr, writing_len);
-					CDC_Transmit_FS(cs_string, strlen);
-					state = 0;
+					CDC_Transmit_FS(cs_string, strlen);*/
+					CDC_Transmit_FS("nok\r\n", 5);
 				}
+                state = 0;
 			}
 		}
 	}

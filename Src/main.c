@@ -101,20 +101,20 @@ int main(void)
 
 	/* USER CODE BEGIN 2 */
 
-	char to_recv[128] = {0};
+	/*char to_recv[128] = {0};
 
 	bootloader_start();
-	bootloader_read(0x08000000, to_recv, 128);
-	bootloader_stop();
+	bootloader_write(0x08000000, to_recv, 128);
+	bootloader_stop();*/
 
-	int correct = 1;
+	/*int correct = 1;
 	for(int idx = 0; idx < 128; ++idx)
 	{
 		if(to_recv[idx] != 0x0F) correct = 0;
 	}
 
 	if(correct) HAL_GPIO_WritePin(GPIOE, LD10_Pin, GPIO_PIN_SET);
-	else HAL_GPIO_WritePin(GPIOE, LD9_Pin, GPIO_PIN_SET);
+	else HAL_GPIO_WritePin(GPIOE, LD9_Pin, GPIO_PIN_SET);*/
 
 	/* USER CODE END 2 */
 
@@ -246,14 +246,14 @@ static void MX_SPI1_Init(void)
 	hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
 	hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
 	hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
-	hspi1.Init.NSS = SPI_NSS_HARD_OUTPUT;
+	hspi1.Init.NSS = SPI_NSS_SOFT;
 	hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_128;
 	hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
 	hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
 	hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
 	hspi1.Init.CRCPolynomial = 7;
 	hspi1.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
-	hspi1.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
+	hspi1.Init.NSSPMode = SPI_NSS_PULSE_DISABLE;
 	if (HAL_SPI_Init(&hspi1) != HAL_OK)
 	{
 		Error_Handler();
