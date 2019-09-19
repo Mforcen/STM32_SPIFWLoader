@@ -89,8 +89,8 @@ try:
     print(response)
     responses += [response]
     sleep(0.05)
-    # for i in trange(chunks, **bar_params):
-    for i in range(chunks):
+    # for i in range(chunks):
+    for i in trange(chunks, **bar_params):
         chunk = file_content[file_written:file_written+128]
         file_written += 128
         checksum = chunk[0]
@@ -139,7 +139,8 @@ try:
         port.write(to_send)
         response = port.readline()
         print(responses)
-        print('f: ' + response)
+        port.close()
+        print('f: ' + response.decode())
 except serial.serialutil.SerialException as serialError:
     print(f"[Serial Error] {serialError}")
     exit()

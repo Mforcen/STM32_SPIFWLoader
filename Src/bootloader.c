@@ -1,6 +1,6 @@
 #include "bootloader.h"
 
-volatile cmd_item cmd_storage[32];
+volatile cmd_item cmd_storage[32]={0};
 volatile uint8_t cmd_head;
 volatile uint8_t cmd_tail;
 
@@ -15,11 +15,12 @@ uint8_t push_cmd(cmd_item item)
 	uint8_t next_head = (cmd_head+1)%CMDSTO_SIZE;
 	if(next_head == cmd_tail) return 1;
 
-	cmd_head = next_head;
 	cmd_storage[cmd_head].command = item.command;
 	cmd_storage[cmd_head].pLength = item.pLength;
-	cmd_storage[cmd_head].params = item.params;
+	//cmd_storage[cmd_head].params = item.params;
+	for(uint8_t idx = 0; idx < 128; ++idx) cmd_storage[cmd_head].params[idx] = item.params[idx];
 	cmd_storage[cmd_head].mem_addr = item.mem_addr;
+	cmd_head = next_head;
 	return 0;
 }
 
@@ -30,7 +31,6 @@ cmd_item pop_cmd()
 		cmd_item retval;
 		retval.command = 0;
 		retval.pLength = 0;
-		retval.params = 0;
 		retval.mem_addr = 0;
 		return retval;
 	}

@@ -286,7 +286,7 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 				cmd_item start_item;
 				start_item.command = 's';
 				start_item.mem_addr = 0;
-				start_item.params = 0;
+				//start_item.params = 0;
 				start_item.pLength = 0;
 
 				push_cmd(start_item);
@@ -304,7 +304,7 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
                 cmd_item finish_item;
 				finish_item.command = 'f';
 				finish_item.mem_addr = 0;
-				finish_item.params = 0;
+				//finish_item.params = 0;
 				finish_item.pLength = 0;
 
 				push_cmd(finish_item);
@@ -354,8 +354,11 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 					write_item.mem_addr = mem_addr;
 					write_item.pLength = writing_len;
 
-					write_item.params = (uint8_t*) malloc(writing_len);
-                    for(unsigned int i = 0; i < writing_len; ++writing_len) write_item.params[i] = buf[i];
+					//write_item.params = (uint8_t*) malloc(writing_len);
+                    for(unsigned int i = 0; i < writing_len; ++i)
+                    {
+						write_item.params[i] = buf[i];
+                    }
                     push_cmd(write_item);
 
 					CDC_Transmit_FS(okmsg, 4);

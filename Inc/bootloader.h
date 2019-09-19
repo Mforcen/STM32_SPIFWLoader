@@ -10,7 +10,8 @@ typedef struct
 	uint8_t command;
 	uint8_t pLength;
 	uint32_t mem_addr;
-    uint8_t* params;
+    uint8_t params[128];
+    //uint8_t* params;
 } cmd_item;
 
 #define CMDSTO_SIZE 32

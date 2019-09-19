@@ -117,6 +117,7 @@ int main(void)
 	else HAL_GPIO_WritePin(GPIOE, LD9_Pin, GPIO_PIN_SET);*/
 
 	uint32_t last_toogle = HAL_GetTick();
+	init_cmd_storage();
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
@@ -143,7 +144,6 @@ int main(void)
 
 		case 'e':
 			bootloader_write(now_item.mem_addr, now_item.params, now_item.pLength);
-			free(now_item.params);
             break;
 		}
 
@@ -274,7 +274,7 @@ static void MX_SPI1_Init(void)
 	hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
 	hspi1.Init.CRCPolynomial = 7;
 	hspi1.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
-	hspi1.Init.NSSPMode = SPI_NSS_PULSE_DISABLE;
+	hspi1.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
 	if (HAL_SPI_Init(&hspi1) != HAL_OK)
 	{
 		Error_Handler();
