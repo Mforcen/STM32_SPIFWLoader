@@ -118,6 +118,9 @@ int main(void)
 
 	uint32_t last_toogle = HAL_GetTick();
 	init_cmd_storage();
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+	uint8_t read_buf[129] = {0};
+
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
@@ -132,19 +135,92 @@ int main(void)
 		}
 
 		cmd_item now_item = pop_cmd();
+		uint8_t retcode = 0;
 		switch(now_item.command)
 		{
 		case 's':
-			bootloader_start();
+			if(bootloader_start()==0) CDC_Transmit_FS("start ok\r\n", 10);
+			else CDC_Transmit_FS("start not ok\r\n", 14);
 			break;
 
 		case 'f':
 			bootloader_stop();
+			CDC_Transmit_FS("end ok\r\n", 8);
 			break;
 
 		case 'e':
-			bootloader_write(now_item.mem_addr, now_item.params, now_item.pLength);
+			retcode = bootloader_write(now_item.mem_addr, now_item.params, now_item.pLength);
+			switch(retcode)
+			{
+			case 1:
+				CDC_Transmit_FS("cmd not ackd\r\n", 14);
+				break;
+
+			case 2:
+				CDC_Transmit_FS("addr not ackd\r\n", 15);
+				break;
+
+			case 3:
+				CDC_Transmit_FS("data not ackd\r\n", 15);
+				break;
+
+			default:
+				CDC_Transmit_FS("write ok\r\n", 10);
+				break;
+			}
             break;
+
+		case 'r':
+			retcode = bootloader_read(now_item.mem_addr, read_buf+1, now_item.pLength);
+			switch(retcode)
+			{
+			case 1:
+				CDC_Transmit_FS("cmd not ackd\r\n", 14);
+				break;
+
+			case 2:
+				CDC_Transmit_FS("addr not ackd\r\n", 15);
+				break;
+
+			case 3:
+				CDC_Transmit_FS("data not ackd\r\n", 15);
+				break;
+
+			default:
+				read_buf[0] = 'd';
+				CDC_Transmit_FS(read_buf, now_item.pLength+1);
+				break;
+			}
+			break;
+
+		case 'g':
+			retcode = bootloader_go(now_item.mem_addr);
+			switch(retcode)
+			{
+			case 1:
+				CDC_Transmit_FS("cmd not ackd\r\n", 14);
+				break;
+
+			case 2:
+				CDC_Transmit_FS("addr not ackd\r\n", 15);
+				break;
+
+			default:
+				CDC_Transmit_FS("go ok\r\n",7);
+				break;
+			}
+			break;
+
+		case 'u':
+			if(bootloader_write_unprotect()) CDC_Transmit_FS("wunprotect ok\r\n", 15);
+			else CDC_Transmit_FS("wunprotect fail\r\n", 17);
+			break;
+
+		case 'p':
+			//if(bootloader_erase(BOOTLOADER_ERASE_FLASH) == 0) CDC_Transmit_FS("erase ok\r\n", 10);
+			if(bootloader_readout_protect() != 0) CDC_Transmit_FS("erase fail\r\n", 12);
+			else if(bootloader_readout_unprotect() != 0) CDC_Transmit_FS("erase fail\r\n", 12);
+			else CDC_Transmit_FS("erase ok\r\n", 10);
 		}
 
 		HAL_Delay(1);

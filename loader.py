@@ -88,7 +88,6 @@ try:
     response = port.readline()
     print(response)
     responses += [response]
-    sleep(0.05)
     # for i in range(chunks):
     for i in trange(chunks, **bar_params):
         chunk = file_content[file_written:file_written+128]
@@ -109,9 +108,10 @@ try:
         to_send += '\r\n'.encode()
 
         port.write(to_send)
+        sleep(0.05)
 
         response = port.readline()
-        print(response)
+        # print(response)
         responses += [response]
 
     if file_written < 0x0fffffff:
@@ -138,9 +138,11 @@ try:
         to_send += b'f\r\n'
         port.write(to_send)
         response = port.readline()
-        print(responses)
+        # print(responses)
         port.close()
-        print('f: ' + response.decode())
+        # print('f: ' + response.decode())
+        for res in responses:
+            print(res[:-2].decode())
 except serial.serialutil.SerialException as serialError:
     print(f"[Serial Error] {serialError}")
     exit()

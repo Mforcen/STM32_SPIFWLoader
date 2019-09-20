@@ -68,10 +68,15 @@ uint8_t bootloader_start()
 
 uint8_t bootloader_get_ack()
 {
-	uint8_t trx=0;
+	uint8_t trx=0, tries = 0;
 	HAL_SPI_Transmit(&hspi1, &trx, 1, 1000);
-	HAL_SPI_Receive(&hspi1, &trx, 1, 1000);
-	if(trx == 0x79)
+	do
+	{
+		HAL_SPI_Receive(&hspi1, &trx, 1, 1000);
+		tries++;
+		HAL_Delay(5);
+	} while(trx != 0x79 && trx != 0x1F && tries < 5);
+	if(trx == 0x79 || trx == 0x1F)
 	{
 		HAL_SPI_Transmit(&hspi1, &trx, 1, 1000);
 		return 1;
@@ -97,7 +102,7 @@ uint8_t bootloader_get_command()
 	return 1;
 }
 
-void bootloader_read(uint32_t addr, uint8_t* recvDataPtr, uint8_t len)
+uint8_t bootloader_read(uint32_t addr, uint8_t* recvDataPtr, uint8_t len)
 {
 	uint8_t to_send[5];
 
@@ -106,7 +111,7 @@ void bootloader_read(uint32_t addr, uint8_t* recvDataPtr, uint8_t len)
 	to_send[2] = 0xEE;
 	HAL_SPI_Transmit(&hspi1, to_send, 3, 1000);
 
-	bootloader_get_ack();
+	if(!bootloader_get_ack()) return 1;
 
 	to_send[0] = (addr>>24)&0xFF;
 	to_send[1] = (addr>>16)&0xFF;
@@ -115,16 +120,37 @@ void bootloader_read(uint32_t addr, uint8_t* recvDataPtr, uint8_t len)
 	to_send[4] = chksum_calc(to_send, 4);
 	HAL_SPI_Transmit(&hspi1, to_send, 5, 1000);
 
-	bootloader_get_ack();
+	if(!bootloader_get_ack()) return 2;
 
-	to_send[0] = 0x7F;
+	to_send[0] = len;
 	to_send[1] = ~to_send[0];
 	HAL_SPI_Transmit(&hspi1, to_send, 2, 1000);
 
-	bootloader_get_ack();
+	if(!bootloader_get_ack()) return 3;
 
 	HAL_SPI_Transmit(&hspi1, to_send, 1, 1000);
-	HAL_SPI_Receive(&hspi1, recvDataPtr, 128, 1000);
+	HAL_SPI_Receive(&hspi1, recvDataPtr, len, 1000);
+
+	return 0;
+}
+
+uint8_t bootloader_go(uint32_t addr)
+{
+	uint8_t to_send[5] = {0x5A, 0x21, 0xDE, 0x00, 0x00};
+	HAL_SPI_Transmit(&hspi1, to_send, 3, 1000);
+
+	if(!bootloader_get_ack()) return 1;
+
+	to_send[0] = (addr>>24)&0xFF;
+	to_send[1] = (addr>>16)&0xFF;
+	to_send[2] = (addr>>8)&0xFF;
+	to_send[3] = addr&0xFF;
+	to_send[4] = chksum_calc(to_send, 4);
+
+	HAL_SPI_Transmit(&hspi1, to_send, 5, 1000);
+
+	if(!bootloader_get_ack()) return 2;
+	return 0;
 }
 
 uint8_t bootloader_write(uint32_t addr, uint8_t* sendData, unsigned int len)
@@ -174,6 +200,73 @@ uint8_t bootloader_write(uint32_t addr, uint8_t* sendData, unsigned int len)
 
 	HAL_GPIO_WritePin(GPIOE, LD10_Pin, GPIO_PIN_RESET);
 	if(!bootloader_get_ack()) return 3;
+	return 0;
+}
+
+uint8_t bootloader_erase(uint16_t num, uint16_t* pages)
+{
+	/*uint8_t to_send[3] = {0x5A, 0x44, 0xBB};
+	HAL_SPI_Transmit(&hspi1, to_send, 3, 1000);
+	if(!bootloader_get_ack()) return 1;
+
+	to_send[0] = (pages>>8) & 0xFF;
+	to_send[1] = pages & 0xFF;
+	to_send[2] = to_send[0]^to_send[1];
+	HAL_SPI_Transmit(&hspi1, to_send, 3, 1000);
+
+	if(!bootloader_get_ack()) return 2;
+
+	if( (pages>>4) != 0xFFF)
+	{
+		to_send[0] = 0;
+		to_send[1] = code;
+		to_send[2] = to_send[0]^to_send[1];
+
+		HAL_SPI_Transmit(&hspi1, to_send, 3, 1000);
+		HAL_Delay(1);
+		if(!bootloader_get_ack()) return 3;
+	}*/
+	return 0;
+}
+
+uint8_t bootloader_write_protect()
+{
+	return 255;
+}
+
+uint8_t bootloader_write_unprotect()
+{
+	uint8_t to_send[3] = {0x5A, 0x73, 0x8C};
+	HAL_SPI_Transmit(&hspi1, to_send, 3, 1000);
+	HAL_Delay(10);
+
+	if(!bootloader_get_ack()) return 1;
+	if(!bootloader_get_ack()) return 2;
+	return 0;
+}
+
+uint8_t bootloader_readout_protect()
+{
+	uint8_t to_send[3] = {0x5A, 0x82, 0x7D};
+	uint8_t dummy = 0x00;
+
+	HAL_SPI_Transmit(&hspi1, to_send, 3, 1000);
+	HAL_Delay(10);
+
+	if(!bootloader_get_ack()) return 1;
+	if(!bootloader_get_ack()) return 2;
+	return 0;
+}
+
+uint8_t bootloader_readout_unprotect()
+{
+	uint8_t to_send[3] = {0x5A, 0x92, 0x6D};
+
+	HAL_SPI_Transmit(&hspi1, to_send, 3, 1000);
+	HAL_Delay(10);
+
+	if(!bootloader_get_ack()) return 1;
+	if(!bootloader_get_ack()) return 2;
 	return 0;
 }
 

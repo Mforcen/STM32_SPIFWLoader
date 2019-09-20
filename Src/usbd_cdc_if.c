@@ -286,11 +286,9 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 				cmd_item start_item;
 				start_item.command = 's';
 				start_item.mem_addr = 0;
-				//start_item.params = 0;
 				start_item.pLength = 0;
 
 				push_cmd(start_item);
-				CDC_Transmit_FS(okmsg, 4);
 			}
 			else if(Buf[idx] == 'e')
 			{
@@ -299,16 +297,40 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 				writing_len = 0;
 				mem_addr = 0;
 			}
+			else if(Buf[idx] == 'r') // la lectura reutiliza variables de escritura
+			{
+				state = 2;
+				writing_state = 0;
+				writing_len = 0;
+				mem_addr = 0;
+			}
+			else if(Buf[idx] == 'g')
+			{
+				state = 3;
+				writing_len = 0;
+				mem_addr = 0;
+			}
+			else if(Buf[idx] == 'p')
+			{
+				//state = 4;
+				cmd_item purge_item;
+				purge_item.command = 'p';
+				push_cmd(purge_item);
+			}
+			else if(Buf[idx] == 'u')
+			{
+				cmd_item wunprotect_item;
+				wunprotect_item.command = 'u';
+				push_cmd(wunprotect_item);
+			}
 			else if(Buf[idx] == 'f')
 			{
                 cmd_item finish_item;
 				finish_item.command = 'f';
 				finish_item.mem_addr = 0;
-				//finish_item.params = 0;
 				finish_item.pLength = 0;
 
 				push_cmd(finish_item);
-				CDC_Transmit_FS(okmsg, 4);
 			}
 		}
 		else if(state == 1)
@@ -339,40 +361,68 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 				uint8_t recv_chks = chksum_calc(buf, writing_len);
 				if(checksum == recv_chks)
 				{
-					/*char cs_string[256];
-					uint16_t strlen;
-					strlen = sprintf(cs_string, "W Ok\t%s\r\n", buf);
-					CDC_Transmit_FS(cs_string, strlen);*/
-
-					/*char cs_string[256];
-					uint16_t strlen;
-					strlen = sprintf(cs_string, "WOk %d\t%d\t%d\t%d\r\n", mem_addr, recv_chks, bufptr, writing_len);
-					CDC_Transmit_FS(cs_string, strlen);*/
-
 					cmd_item write_item;
 					write_item.command = 'e';
 					write_item.mem_addr = mem_addr;
 					write_item.pLength = writing_len;
+                    for(unsigned int i = 0; i < writing_len; ++i) write_item.params[i] = buf[i];
 
-					//write_item.params = (uint8_t*) malloc(writing_len);
-                    for(unsigned int i = 0; i < writing_len; ++i)
-                    {
-						write_item.params[i] = buf[i];
-                    }
                     push_cmd(write_item);
-
-					CDC_Transmit_FS(okmsg, 4);
-
 				}
-				else
-				{
-					/*char cs_string[256];
-					uint16_t strlen;
-					strlen = sprintf(cs_string, "WNOk %d\t%d\t%d\t%d\r\n", checksum, recv_chks, bufptr, writing_len);
-					CDC_Transmit_FS(cs_string, strlen);*/
-					CDC_Transmit_FS(nokmsg, 5);
-				}
+				else CDC_Transmit_FS("comm error\r\n", 12);
                 state = 0;
+			}
+		}
+		else if(state == 2)
+		{
+			if(writing_state == 0)
+			{
+				mem_addr |= (((uint8_t)Buf[idx]) << (8*(3-writing_len)));
+				++writing_len;
+				if(writing_len == 4) writing_state = 1;
+			}
+			else if(writing_state == 1)
+			{
+                writing_len = Buf[idx]+1;
+
+                cmd_item read_item;
+                read_item.command = 'r';
+                read_item.mem_addr = mem_addr;
+                read_item.pLength = writing_len;
+
+                push_cmd(read_item);
+                state = 0;
+                writing_state = 0;
+			}
+		}
+		else if(state == 3)
+		{
+			mem_addr |= (((uint8_t)Buf[idx]) << (8*(3-writing_len)));
+			++writing_len;
+			if(writing_len == 4)
+			{
+				cmd_item go_item;
+				go_item.command = 'g';
+				go_item.mem_addr = mem_addr;
+				go_item.pLength = 0;
+
+				push_cmd(go_item);
+				state = 0;
+			}
+		}
+		else if(state == 4)
+		{
+			mem_addr |= (((uint8_t)Buf[idx]) << (8*(3-writing_len)));
+			++writing_len; // puto reusando código ya porque si
+			if(writing_len == 4)
+			{
+				cmd_item purge_item;
+				purge_item.command = 'p';
+				purge_item.mem_addr = (mem_addr>>16) & 0xFFFF;
+				purge_item.pLength = mem_addr & 0xFF;
+
+				push_cmd(purge_item);
+				state = 0;
 			}
 		}
 	}
