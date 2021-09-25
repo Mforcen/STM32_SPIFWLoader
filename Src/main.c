@@ -212,15 +212,54 @@ int main(void)
 			break;
 
 		case 'u':
-			if(bootloader_write_unprotect()) CDC_Transmit_FS("wunprotect ok\r\n", 15);
-			else CDC_Transmit_FS("wunprotect fail\r\n", 17);
+			switch(bootloader_write_unprotect())
+			{
+			case 0:
+				CDC_Transmit_FS("wunprotect ok\r\n", 15);
+				break;
+			case 1:
+				CDC_Transmit_FS("wunprotect1 fail\r\n", 18);
+				break;
+			case 2:
+				CDC_Transmit_FS("wunprotect2 fail\r\n", 18);
+				break;
+			}
 			break;
 
 		case 'p':
 			//if(bootloader_erase(BOOTLOADER_ERASE_FLASH) == 0) CDC_Transmit_FS("erase ok\r\n", 10);
-			if(bootloader_readout_protect() != 0) CDC_Transmit_FS("erase fail\r\n", 12);
-			else if(bootloader_readout_unprotect() != 0) CDC_Transmit_FS("erase fail\r\n", 12);
+			if(bootloader_readout_protect() != 0) CDC_Transmit_FS("readp fail\r\n", 12);
+			else CDC_Transmit_FS("readp ok\r\n", 10);
+			break;
+		case 'l':
+			if(bootloader_readout_unprotect() != 0) CDC_Transmit_FS("readun fail\r\n", 13);
 			else CDC_Transmit_FS("erase ok\r\n", 10);
+			break;
+
+		case 'b':
+			{
+				uint16_t numpages[64];
+				for(int i = 0; i < now_item.pLength; ++i) numpages[i] = ((now_item.params[2*i] << 8)&0xff00) | (now_item.params[2*i+1]&0xff);
+				switch(bootloader_erase(now_item.pLength-1, numpages))
+				{
+				case 0:
+					CDC_Transmit_FS("erase ok\r\n", 10);
+					break;
+				case 1:
+					CDC_Transmit_FS("too big\r\n", 9);
+					break;
+				case 2:
+					CDC_Transmit_FS("not hdr\r\n",9);
+					break;
+				case 3:
+					CDC_Transmit_FS("not nbr\r\n",9);
+					break;
+				case 4:
+					CDC_Transmit_FS("not pgs\r\n",9);
+					break;
+				}
+				break;
+			}
 		}
 
 		HAL_Delay(1);

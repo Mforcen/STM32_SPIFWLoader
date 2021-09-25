@@ -205,27 +205,30 @@ uint8_t bootloader_write(uint32_t addr, uint8_t* sendData, unsigned int len)
 
 uint8_t bootloader_erase(uint16_t num, uint16_t* pages)
 {
-	/*uint8_t to_send[3] = {0x5A, 0x44, 0xBB};
-	HAL_SPI_Transmit(&hspi1, to_send, 3, 1000);
-	if(!bootloader_get_ack()) return 1;
+	if(num > 64) return 1;
 
-	to_send[0] = (pages>>8) & 0xFF;
-	to_send[1] = pages & 0xFF;
-	to_send[2] = to_send[0]^to_send[1];
-	HAL_SPI_Transmit(&hspi1, to_send, 3, 1000);
+	uint8_t to_send[129] = {0x5A, 0x44, 0xBB};
 
+	HAL_SPI_Transmit(&hspi1, to_send, 3, 1000);
 	if(!bootloader_get_ack()) return 2;
 
-	if( (pages>>4) != 0xFFF)
-	{
-		to_send[0] = 0;
-		to_send[1] = code;
-		to_send[2] = to_send[0]^to_send[1];
+	to_send[0] = (num >> 8) & 0xff;
+	to_send[1] = num & 0xff;
+	to_send[2] = chksum_calc(to_send, 2);
 
-		HAL_SPI_Transmit(&hspi1, to_send, 3, 1000);
-		HAL_Delay(1);
-		if(!bootloader_get_ack()) return 3;
-	}*/
+	HAL_SPI_Transmit(&hspi1, to_send, 3, 1000);
+	if(!bootloader_get_ack()) return 3;
+
+	for(int i = 0; i < num; ++i)
+	{
+		to_send[2*i] = (pages[i] >> 8) & 0xff;
+		to_send[2*i+1] = pages[i] & 0xff;
+	}
+	to_send[num*2] = chksum_calc(to_send, num*2);
+	to_send[num*2] ^= (num>>8)&0xff;
+	to_send[num*2] ^= num & 0xff;
+	HAL_SPI_Transmit(&hspi1, to_send, num*2+1, 1000);
+	if(!bootloader_get_ack()) return 4;
 	return 0;
 }
 
@@ -238,7 +241,7 @@ uint8_t bootloader_write_unprotect()
 {
 	uint8_t to_send[3] = {0x5A, 0x73, 0x8C};
 	HAL_SPI_Transmit(&hspi1, to_send, 3, 1000);
-	HAL_Delay(10);
+	HAL_Delay(5);
 
 	if(!bootloader_get_ack()) return 1;
 	if(!bootloader_get_ack()) return 2;

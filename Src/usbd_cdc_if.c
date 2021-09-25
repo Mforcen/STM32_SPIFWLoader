@@ -250,12 +250,13 @@ uint8_t state = 0;
 uint8_t writing_state = 0;
 uint32_t mem_addr;
 uint8_t writing_len;
+uint16_t erase_page;
 
 uint8_t buf[256] =  {0};
 uint16_t bufptr;
 
-uint8_t okmsg[] = "ok\r\n";
-uint8_t nokmsg[] = "nok\r\n";
+const uint8_t okmsg[] = "ok\r\n";
+const uint8_t nokmsg[] = "nok\r\n";
 
 /**
   * @brief  Data received over USB OUT endpoint are sent over CDC interface
@@ -313,9 +314,15 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 			else if(Buf[idx] == 'p')
 			{
 				//state = 4;
-				cmd_item purge_item;
-				purge_item.command = 'p';
-				push_cmd(purge_item);
+				cmd_item protect_item;
+				protect_item.command = 'p';
+				push_cmd(protect_item);
+			}
+			else if(Buf[idx] == 'l')
+			{
+				cmd_item unprotect_item;
+				unprotect_item.command = 'l';
+				push_cmd(unprotect_item);
 			}
 			else if(Buf[idx] == 'u')
 			{
@@ -331,6 +338,13 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 				finish_item.pLength = 0;
 
 				push_cmd(finish_item);
+			}
+			else if(Buf[idx] == 'b')
+			{
+				state = 5;
+				writing_state = 0;
+				mem_addr = 0;
+				writing_len = 0;
 			}
 		}
 		else if(state == 1)
@@ -423,6 +437,49 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 
 				push_cmd(purge_item);
 				state = 0;
+			}
+		}
+		else if(state == 5)
+		{
+			if(writing_state == 0)
+			{
+				if(Buf[idx] >= '0' && Buf[idx]<='9')
+				{
+					writing_len*=10;
+					writing_len+=Buf[idx]-'0';
+				}
+				else
+				{
+					writing_state = 1;
+					erase_page = 0;
+					bufptr = 0;
+				}
+			}
+			else if(writing_state == 1)
+			{
+				if(Buf[idx] >= '0' && Buf[idx]<= '9')
+				{
+                    erase_page*=10;
+                    erase_page+=Buf[idx]-'0';
+				}
+				else
+				{
+					buf[bufptr++] = (erase_page >> 8) & 0xff;
+					buf[bufptr++] = erase_page & 0xff;
+					erase_page = 0;
+
+					if(Buf[idx] != ',')
+					{
+						cmd_item erase_item;
+						erase_item.command = 'b';
+						erase_item.pLength = writing_len;
+						for(int i = 0; i < bufptr; ++i) erase_item.params[i] = buf[i];
+						push_cmd(erase_item);
+						state = 0;
+						writing_state = 0;
+						bufptr = 0;
+					}
+				}
 			}
 		}
 	}

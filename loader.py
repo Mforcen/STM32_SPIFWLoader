@@ -6,6 +6,7 @@ from tqdm import trange
 import sys
 import glob
 from time import sleep
+import math
 
 def serial_ports():
     """ Lists serial port names
@@ -68,6 +69,7 @@ except Exception:
 
 file_content = f.read()
 chunks = len(file_content)//128
+pages_to_erase = math.ceil(len(file_content)/256)
 file_written = 0
 address = 0x08000000
 
@@ -81,13 +83,42 @@ bar_params = dict(desc="Progress",
 
 responses = []
 
+
+def start():
+    buf = b's\r\n'
+    port.write(buf)
+    print(port.readline())
+
+
+def end():
+    buf = b'f\r\n'
+    port.write(buf)
+    print(port.readline())
+
+
+def readout_unprotect():
+    buf = b'l\r\n'
+    port.write(buf)
+    print(port.readline())
+
+
+def readout_protect():
+    buf = b'p\r\n'
+    port.write(buf)
+    print(port.readline())
+
+
 try:
     to_send = bytearray()
     to_send += b's\r\n'
     port.write(to_send)
     response = port.readline()
+    if response.decode() != 'start ok\r\n':
+        print('start not ok')
+        exit(1)
     print(response)
     responses += [response]
+
     # for i in range(chunks):
     for i in trange(chunks, **bar_params):
         chunk = file_content[file_written:file_written+128]
@@ -116,33 +147,35 @@ try:
 
     if file_written < 0x0fffffff:
         chunk = file_content[file_written:]
-        checksum = chunk[0]
-        for val in chunk[1:]:
-            checksum ^= val
-        to_send = bytearray()
-        to_send += b'e'
+        if len(chunk) > 0:
+            checksum = chunk[0]
+            for val in chunk[1:]:
+                checksum ^= val
+            to_send = bytearray()
+            to_send += b'e'
 
-        to_send += address.to_bytes(4, 'big')
+            to_send += address.to_bytes(4, 'big')
 
-        to_send += (len(chunk)-1).to_bytes(1, 'big')
-        to_send += chunk
-        to_send += checksum.to_bytes(1, 'big')
-        to_send += '\r\n'.encode()
+            to_send += (len(chunk)-1).to_bytes(1, 'big')
+            to_send += chunk
+            to_send += checksum.to_bytes(1, 'big')
+            to_send += '\r\n'.encode()
 
-        port.write(to_send)
+            port.write(to_send)
 
-        response = port.readline()
-        responses += [response]
+            response = port.readline()
+            responses += [response]
 
         to_send = bytearray()
         to_send += b'f\r\n'
         port.write(to_send)
-        response = port.readline()
+        responses += [port.readline()]
         # print(responses)
         port.close()
         # print('f: ' + response.decode())
         for res in responses:
-            print(res[:-2].decode())
+            if res != b'write ok\r\n':
+                print(res[:-2].decode())
 except serial.serialutil.SerialException as serialError:
     print(f"[Serial Error] {serialError}")
     exit()
